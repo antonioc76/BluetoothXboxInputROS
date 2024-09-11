@@ -39,8 +39,10 @@ class ControllerInputNode(Node):
             
         return controller
     
+
     def normalize(self, x, min, max, lower_bound):
         return ((-lower_bound + 1) * (x - min) / (max - min) ) + lower_bound
+
 
     def get_inputs(self):
         while True:
@@ -126,6 +128,7 @@ def main():
 
     controller_input.destroy_node() 
     rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()
