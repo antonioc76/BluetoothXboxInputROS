@@ -24,9 +24,32 @@ class ControllerInputNode(Node):
 
         self.stick_names = ["ABS_X", "ABS_Y", "ABS_Z", "ABS_RZ"]
         self.dpad_names = ["ABS_HAT0Y", "ABS_HAT0X"]
-        self.button_names = ["BTN_NORTH", "BTN_EAST", "BTN_SOUTH", "BTN_WEST"]
-        self.get_inputs()
+        self.button_names = ["BTN_NORTH", "BTN_EAST", "BTN_SOUTH", "BTN_WEST"]\
         
+        self.controller_state = {
+            "ABS_BRAKE": 0.0,
+            "ABS_GAS": 0.0,
+            "ABS_HAT0X": 0.0,
+            "ABS_HAT0Y": 0.0,
+            "ABS_RZ": 0.0,
+            "ABS_X": 0.0,
+            "ABS_Y": 0.0,
+            "ABS_Z": 0.0,
+            "BTN_EAST": 0.0,
+            "BTN_MODE": 0.0,
+            "BTN_NORTH": 0.0,
+            "BTN_SELECT": 0.0,
+            "BTN_START": 0.0,
+            "BTN_SOUTH": 0.0,
+            "BTN_TL": 0.0,
+            "BTN_TR": 0.0,
+            "BTN_WEST": 0.0,
+            "KEY_RECORD": 0.0,
+            "wildcard": 0.0
+        }
+
+        self.get_inputs()
+
 
     def get_controller(self):
         devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
@@ -51,7 +74,7 @@ class ControllerInputNode(Node):
                     if event.type in ecodes.bytype:
                         codename = ecodes.bytype[event.type][event.code]
                     else:
-                        codename = "?"
+                        codename = "wildcard"
                     
                     value = 0.0
 
@@ -71,8 +94,6 @@ class ControllerInputNode(Node):
 
                     elif ecodes.EV[event.type] == "EV_KEY": # buttons
                         value = float(event.value)
-                    
-                    msg = ControllerInput()
 
                     matches = None
 
@@ -80,15 +101,17 @@ class ControllerInputNode(Node):
                     if type(codename) == list:
                         matches = list(set(codename) & set(self.button_names))
                         if matches is not None:
-                            msg.button_name = self.xbox_swap_N_W(matches[0])
+                            button_name = self.xbox_swap_N_W(matches[0])
                         else:
-                            msg.button_name = "?"
+                            button_name = "wildcard"
                     else:
-                        msg.button_name = codename
+                        button_name = codename
 
-                    msg.value = value
+                    self.update_controller_state(button_name, value)
 
-                    self.get_logger().info(f"button: {msg.button_name}, value: {msg.value}, type: {ecodes.EV[event.type]}")
+                    msg = self.construct_controller_state_message()
+
+                    self.get_logger().info(f"publishing controller state:\n{str(self.controller_state)}")
                     self.publisher.publish(msg)
 
             except OSError: # first disconnect
@@ -101,7 +124,41 @@ class ControllerInputNode(Node):
                 pass
 
 
+    def construct_controller_state_message(self):
+        message = ControllerInput()
+
+        message.btn_north = self.controller_state["BTN_NORTH"]
+        message.btn_east = self.controller_state["BTN_EAST"]
+        message.btn_south = self.controller_state["BTN_SOUTH"]
+        message.btn_west = self.controller_state["BTN_WEST"]
+        message.btn_start = self.controller_state["BTN_START"]
+        message.btn_select = self.controller_state["BTN_SELECT"]
+        message.btn_mode = self.controller_state["BTN_MODE"]        
+        message.btn_tr = self.controller_state["BTN_TR"]        
+        message.btn_tl = self.controller_state["BTN_TL"]
+        message.key_record = self.controller_state["KEY_RECORD"]
+        message.abs_hat0x = self.controller_state["ABS_HAT0X"]   
+        message.abs_hat0y = self.controller_state["ABS_HAT0Y"]           
+        message.abs_x = self.controller_state["ABS_X"]           
+        message.abs_y = self.controller_state["ABS_Y"]
+        message.abs_z = self.controller_state["ABS_Z"]
+        message.abs_rz = self.controller_state["ABS_RZ"]
+        message.abs_gas = self.controller_state["ABS_GAS"]      
+        message.abs_brake = self.controller_state["ABS_BRAKE"]
+        message.wildcard = self.controller_state["wildcard"]
+        
+        return message
+
+
+    def update_controller_state(self, key, value):
+        self.controller_state[key] = value
+
+
     def reconnect(self):
+        self.controller_state = dict.fromkeys(self.controller_state, 0.0)
+        msg = self.construct_controller_state_message()
+        self.publisher.publish(msg)
+        
         time.sleep(2)
         self.get_logger().info("attempting to reconnect...")
         self.controller = None

@@ -9,15 +9,30 @@ class ControllerListener(Node):
 
     def __init__(self):
         super().__init__('controller_subscriber')
+
+        self.controller_state = {}
+
         self.subscription = self.create_subscription(
             ControllerInput,
             'autonav/controller_input',
             self.listener_callback,
             10)
+        
         self.subscription  # prevent unused variable warning
 
+
     def listener_callback(self, msg):
-        self.get_logger().info(f"I heard: {msg.button_name}, {msg.value}")
+        self.deserialize_controller_state(msg)
+        self.get_logger().info(f"I heard: {str(self.controller_state)}")
+
+
+    def deserialize_controller_state(self, msg):
+        attributes = [n for n in dir(msg) if not (n.startswith('__') or n.startswith('_'))]
+        attributes.remove('SLOT_TYPES')
+        attributes.remove('get_fields_and_field_types')
+        print(attributes)
+        for attribute in attributes:
+            self.controller_state[attribute] = getattr(msg, attribute)
 
 
 def main(args=None):
