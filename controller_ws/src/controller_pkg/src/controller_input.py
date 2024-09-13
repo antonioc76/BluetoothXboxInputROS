@@ -20,7 +20,7 @@ class ControllerInputNode(Node):
     def __init__(self):
         super().__init__('controller_input')
 
-        self.timer_period = 0.1
+        self.timer_period_s = 0.1
         self.publisher = self.create_publisher(ControllerInput, 'autonav/controller_input', 10)
         
         self.controller = self.get_controller()
@@ -61,7 +61,7 @@ class ControllerInputNode(Node):
             if device.name == 'Xbox Wireless Controller':
                 controller = evdev.InputDevice(device.path)
                 self.get_logger().info(f"assigned controller: \nName: {device.name} \nPath: {device.path} \nBluetooth MAC address: {device.uniq}")
-                self.get_logger().info(f"controller state will be published every {self.timer_period} seconds")
+                self.get_logger().info(f"controller state will be published on update and every {self.timer_period_s} seconds")
             
         return controller
     
@@ -139,11 +139,17 @@ class ControllerInputNode(Node):
     def clock_routine(self, last_callback_time_s):
         current_time_s = time.time()
         time_delta_s = current_time_s - last_callback_time_s
-        if time_delta_s > self.timer_period:
+        if time_delta_s > self.timer_period_s:
             self.controller_state_timer_callback()
             last_callback_time_s = time.time()
 
         return last_callback_time_s
+
+
+    def controller_state_timer_callback(self):
+        msg = self.construct_controller_state_message()
+        # print(f"publishing: {str(self.controller_state)}")
+        self.publisher.publish(msg)
 
 
     def construct_controller_state_message(self):
@@ -180,7 +186,7 @@ class ControllerInputNode(Node):
         self.controller_state = dict.fromkeys(self.controller_state, 0.0)
         last_callback_time_s = self.clock_routine(last_callback_time_s)
 
-        time.sleep(self.timer_period)
+        time.sleep(self.timer_period_s)
 
         self.get_logger().info("attempting to reconnect...")
         self.controller = None
@@ -190,13 +196,7 @@ class ControllerInputNode(Node):
             self.get_logger().info("reconnected!")
         
         return last_callback_time_s
-
-
-    def controller_state_timer_callback(self):
-        msg = self.construct_controller_state_message()
-        # print(f"publishing: {str(self.controller_state)}")
-        self.publisher.publish(msg)
-
+    
 
     def xbox_swap_N_W(self, BTN_DIR):
         if BTN_DIR == "BTN_NORTH":
@@ -206,7 +206,6 @@ class ControllerInputNode(Node):
         else:
             return BTN_DIR
         
-    
 
 def main():
     rclpy.init()
