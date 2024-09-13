@@ -30,7 +30,6 @@ class ControllerListener(Node):
         attributes = [n for n in dir(msg) if not (n.startswith('__') or n.startswith('_'))]
         attributes.remove('SLOT_TYPES')
         attributes.remove('get_fields_and_field_types')
-        print(attributes)
         for attribute in attributes:
             self.controller_state[attribute] = getattr(msg, attribute)
 
