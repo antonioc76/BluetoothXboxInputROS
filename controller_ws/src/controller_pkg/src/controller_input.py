@@ -50,7 +50,7 @@ class ControllerInputNode(Node):
             "wildcard": 0.0
         }
 
-        self.get_inputs()
+        self.get_inputs_loop()
 
 
     def get_controller(self):
@@ -60,8 +60,8 @@ class ControllerInputNode(Node):
         for device in devices:
             if device.name == 'Xbox Wireless Controller':
                 controller = evdev.InputDevice(device.path)
-                self.get_logger().info(f"assigned controller: \nName: {device.name} \nPath: {device.path} \nBluetooth MAC address: {device.uniq}")
-                self.get_logger().info(f"controller state will be published on update and every {self.timer_period_s} seconds")
+                self.get_logger().info(f"assigned controller: \nName: {device.name} \nPath: {device.path} \nBluetooth MAC address: {device.uniq}\n" +
+                                       f"\nController state will be published on update and every {self.timer_period_s} seconds")
             
         return controller
     
@@ -70,7 +70,7 @@ class ControllerInputNode(Node):
         return ((-lower_bound + 1) * (x - min) / (max - min) ) + lower_bound
 
 
-    def get_inputs(self):
+    def get_inputs_loop(self):
         last_callback_time_s = time.time()
         while True:
             last_callback_time_s = self.clock_routine(last_callback_time_s)
