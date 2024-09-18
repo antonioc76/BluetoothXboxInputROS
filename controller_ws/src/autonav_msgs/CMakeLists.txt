@@ -10,6 +10,7 @@ find_package(builtin_interfaces REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ControllerInput.msg"
+  "msg/MotorInput.msg"
   DEPENDENCIES builtin_interfaces # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
 )
 

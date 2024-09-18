@@ -50,6 +50,7 @@ install(TARGETS
    #/path_to_program/program.py
    src/controller_input.py
    src/controller_listener.py
+   src/manual_24.py
    DESTINATION lib/${PROJECT_NAME}
 )
 
